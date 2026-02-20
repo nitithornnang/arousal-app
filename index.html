@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arousal Observer</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap');
+        
+        /* Dark Theme Variables */
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --surface-variant: #2c2c2c;
+            --text-primary: #e0e0e0;
+            --text-secondary: #9e9e9e;
+            --primary-color: #8ab4f8; 
+            --primary-dark: #669df6;
+            
+            /* Muted Zone Colors */
+            --zone-red: #b71c1c; 
+            --zone-yellow: #f57f17; 
+            --zone-green: #2e7d32; 
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .screen {
+            display: none; width: 100%; height: 100%;
+            flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; box-sizing: border-box;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--surface-color); padding: 25px; border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%; max-width: 500px;
+            overflow-y: auto; max-height: 95vh;
+        }
+        h2 { color: var(--text-primary); margin-top: 0; margin-bottom: 20px; font-weight: 600; font-size: 1.4rem; }
+        
+        /* Material Inputs */
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-weight: 500; color: var(--primary-color); font-size: 0.85rem; margin-bottom: 8px; margin-left: 4px;}
+        input {
+            width: 100%; padding: 16px; 
+            background-color: var(--surface-variant);
+            color: var(--text-primary);
+            border: none; border-radius: 12px;
+            font-size: 1rem; font-family: 'Sarabun', sans-serif;
+            box-sizing: border-box; transition: 0.2s;
+        }
+        input:focus { outline: 2px solid var(--primary-color); }
+        input::placeholder { color: #757575; }
+        
+        /* Buttons */
+        .btn-primary {
+            background-color: var(--primary-color); color: #121212;
+            padding: 16px 24px; border: none; border-radius: 100px; 
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            width: 100%; transition: background-color 0.2s, transform 0.1s; margin-top: 15px;
+        }
+        .btn-primary:active { transform: scale(0.98); background-color: var(--primary-dark); }
+        
+        .btn-stop {
+            background-color: transparent; color: #ffb4ab;
+            border: 1px solid #ffb4ab;
+            padding: 10px 16px; border-radius: 100px;
+            font-size: 0.9rem; font-weight: 500; cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-stop:active { background-color: rgba(255, 180, 171, 0.1); }
+
+        /* Instructions Screen */
+        .zone-desc { text-align: left; margin-bottom: 16px; padding: 16px; border-radius: 16px; background-color: var(--surface-variant); }
+        .zone-title { font-weight: 600; font-size: 1.05rem; margin-bottom: 6px; }
+        .zone-text { font-size: 0.9rem; color: var(--text-secondary); margin: 0; line-height: 1.5;}
+
+        /* Recording Screen */
+        .header-info {
+            width: 100%; display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 24px;
+        }
+        .info-text { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
+        .info-sub { font-size: 0.8rem; color: var(--text-secondary); }
+        
+        .color-container {
+            display: flex; flex-direction: column; width: 100%; height: 100%; gap: 16px;
+        }
+        .color-btn {
+            flex: 1; border: none; border-radius: 24px;
+            font-size: 2.5rem; font-weight: 600; color: rgba(255,255,255,0.9);
+            cursor: pointer; transition: transform 0.1s, filter 0.2s;
+        }
+        .color-btn:active { transform: scale(0.96); filter: brightness(1.2); }
+        
+        .btn-red { background-color: var(--zone-red); } 
+        .btn-yellow { background-color: var(--zone-yellow); } 
+        .btn-green { background-color: var(--zone-green); } 
+        
+        .log-feedback {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            font-size: 1rem; font-weight: 500; color: #121212; background: var(--text-primary);
+            padding: 8px 20px; border-radius: 100px;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="screen1" class="screen active">
+        <div class="card">
+            <h2>ข้อมูลการประเมิน</h2>
+            <div class="input-group">
+                <label>ข้อมูลผู้รับบริการ (เด็ก)</label>
+                <input type="text" id="patientName" placeholder="ชื่อ-สกุล" required>
+                <input type="number" id="patientAge" placeholder="อายุ (ปี)" style="margin-top: 10px;" required>
+            </div>
+            <div class="input-group">
+                <label>ข้อมูลผู้ประเมิน (Rater)</label>
+                <input type="text" id="raterName" placeholder="ชื่อ-สกุล" required>
+                <input type="text" id="raterProfession" placeholder="วิชาชีพ" style="margin-top: 10px;" required>
+            </div>
+            <button class="btn-primary" onclick="goToInstructions()">ถัดไป</button>
+        </div>
+    </div>
+
+    <div id="screen2" class="screen">
+        <div class="card">
+            <h2>คำอธิบายลักษณะพฤติกรรม</h2>
+            
+            <div class="zone-desc" style="border-left: 4px solid var(--zone-red);">
+                <div class="zone-title" style="color: #ff8a80;">RED ZONE (High Arousal)</div>
+                <p class="zone-text">ระดับการตื่นตัวสูงมาก มีอารมณ์รุนแรง ควบคุมตัวเองไม่ได้ เช่น โกรธจัด ร้องไห้งอแงรุนแรง ก้าวร้าว ตื่นตระหนก</p>
+            </div>
+            
+            <div class="zone-desc" style="border-left: 4px solid var(--zone-yellow);">
+                <div class="zone-title" style="color: #ffd54f;">YELLOW ZONE (Elevated)</div>
+                <p class="zone-text">ระดับการตื่นตัวเริ่มสูงกว่าปกติ หรืออยู่ในระดับที่เริ่มเสียสมาธิ เช่น ตื่นเต้นเกินไป หงุดหงิด วิตกกังวล ยุกยิก</p>
+            </div>
+
+            <div class="zone-desc" style="border-left: 4px solid var(--zone-green);">
+                <div class="zone-title" style="color: #81c784;">GREEN ZONE (Optimal)</div>
+                <p class="zone-text">ระดับการตื่นตัวที่เหมาะสม สงบและตื่นตัว (Calm & Alert) มีสมาธิพร้อมเรียนรู้และทำกิจกรรม</p>
+            </div>
+
+            <button class="btn-primary" onclick="startSession()">เริ่มเก็บข้อมูล</button>
+            <button class="btn-primary" style="background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color);" onclick="backToScreen1()">ย้อนกลับ</button>
+        </div>
+    </div>
+
+    <div id="screen3" class="screen">
+        <div class="header-info">
+            <div>
+                <div id="displayPatientInfo" class="info-text">ผู้รับบริการ: -</div>
+                <div id="displayRaterInfo" class="info-sub">ผู้ประเมิน: -</div>
+            </div>
+            <button class="btn-stop" onclick="endSession()">จบและบันทึก</button>
+        </div>
+        <div class="color-container">
+            <button class="color-btn btn-red" onclick="recordArousal('Red')">RED</button>
+            <button class="color-btn btn-yellow" onclick="recordArousal('Yellow')">YELLOW</button>
+            <button class="color-btn btn-green" onclick="recordArousal('Green')">GREEN</button>
+        </div>
+        <div id="logFeedback" class="log-feedback">บันทึกแล้ว!</div>
+    </div>
+
+    <div id="screen4" class="screen">
+        <div class="card">
+            <h2>บันทึกข้อมูลสำเร็จ</h2>
+            <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 30px; line-height: 1.5;">
+                ระบบได้สร้างและบันทึกไฟล์ CSV ลงในอุปกรณ์ของคุณเรียบร้อยแล้ว
+            </p>
+            <button class="btn-primary" onclick="resetApp()">เริ่มเก็บข้อมูลคนต่อไป</button>
+        </div>
+    </div>
+
+    <script>
+        let sessionData = [];
+        let info = {};
+
+        function goToInstructions() {
+            const pName = document.getElementById('patientName').value.trim();
+            const pAge = document.getElementById('patientAge').value.trim();
+            const rName = document.getElementById('raterName').value.trim();
+            const rProf = document.getElementById('raterProfession').value.trim();
+
+            if (!pName || !pAge || !rName || !rProf) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วนก่อนไปต่อ');
+                return;
+            }
+            info = { patientName: pName, patientAge: pAge, raterName: rName, raterProfession: rProf };
+            switchScreen('screen1', 'screen2');
+        }
+
+        function backToScreen1() { switchScreen('screen2', 'screen1'); }
+
+        function startSession() {
+            sessionData = []; 
+            document.getElementById('displayPatientInfo').innerText = `ผู้รับบริการ: ${info.patientName}`;
+            document.getElementById('displayRaterInfo').innerText = `Rater: ${info.raterName}`;
+            switchScreen('screen2', 'screen3');
+        }
+
+        function recordArousal(color) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('th-TH', { hour12: false });
+            
+            sessionData.push({
+                date: now.toLocaleDateString('th-TH'),
+                time: timeStr,
+                timestamp_ms: now.getTime(),
+                color: color
+            });
+
+            const feedback = document.getElementById('logFeedback');
+            feedback.innerText = `บันทึก ${color} เวลา ${timeStr}`;
+            feedback.style.opacity = 1;
+            setTimeout(() => { feedback.style.opacity = 0; }, 1200);
+        }
+
+        function endSession() {
+            if (sessionData.length === 0 && !confirm("ยังไม่มีข้อมูล ต้องการบันทึกไฟล์ว่างหรือไม่?")) return;
+            exportCSV();
+            switchScreen('screen3', 'screen4');
+        }
+
+        function exportCSV() {
+            let csvContent = "PatientName,PatientAge,RaterName,RaterProfession,Date,Time,Timestamp_MS,ArousalLevel\n";
+            sessionData.forEach(row => {
+                csvContent += `"${info.patientName}",${info.patientAge},"${info.raterName}","${info.raterProfession}",${row.date},${row.time},${row.timestamp_ms},${row.color}\n`;
+            });
+
+            // แก้ไขปัญหาภาษาไทยเป็นภาษาต่างดาวด้วยการบังคับใส่ BOM (Byte Order Mark) ระดับไบต์
+            const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
+            const blob = new Blob([BOM, csvContent], { type: 'text/csv;charset=utf-8' });
+            
+            const link = document.createElement("a");
+            const currentDate = new Date().toISOString().split('T')[0];
+            const cleanName = info.patientName.replace(/\s+/g, '_');
+            
+            link.href = URL.createObjectURL(blob);
+            link.download = `Arousal_${cleanName}_by_${info.raterName}_${currentDate}.csv`;
+            document.body.appendChild(link); 
+            link.click(); 
+            document.body.removeChild(link);
+        }
+
+        function resetApp() {
+            document.getElementById('patientName').value = '';
+            document.getElementById('patientAge').value = '';
+            switchScreen('screen4', 'screen1');
+        }
+
+        function switchScreen(fromId, toId) {
+            document.getElementById(fromId).classList.remove('active');
+            document.getElementById(toId).classList.add('active');
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+        }
+    </script>
+</body>
+</html>
