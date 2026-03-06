@@ -111,9 +111,9 @@
         <p style="color:#ccc; font-size: 14px; margin-bottom: 20px;">เพื่อให้การคำนวณแม่นยำที่สุด กรุณาประเมินสภาวะของเด็กด้วยสายตา (Clinical Observation) ก่อนเริ่มบันทึก Baseline ครั้งแรก</p>
         
         <button class="btn-primary" style="background: #4da6ff;" onclick="triggerBlueIntervention('precheck')">🥶 โซนสีฟ้า (ซึม/เฉื่อยชา/ง่วง)</button>
-        <button class="btn-primary btn-success" onclick="enterDashboard()">😃 โซนสีเขียว (พร้อมเรียนรู้ / Optimal)</button>
-        <button class="btn-primary" style="background: #ffeb3b; color: #111;" onclick="enterDashboard()">😐 โซนสีเหลือง (เริ่มตื่นตัว)</button>
-        <button class="btn-primary btn-danger" onclick="enterDashboard()">😫 โซนสีแดง (เครียด/Hyper)</button>
+        <button class="btn-primary btn-success" onclick="enterDashboard(false)">😃 โซนสีเขียว (พร้อมเรียนรู้ / Optimal)</button>
+        <button class="btn-primary" style="background: #ffeb3b; color: #111;" onclick="enterDashboard(false)">😐 โซนสีเหลือง (เริ่มตื่นตัว)</button>
+        <button class="btn-primary btn-danger" onclick="enterDashboard(false)">😫 โซนสีแดง (เครียด/Hyper)</button>
     </div>
 
     <div id="screen-dashboard" class="screen">
@@ -244,7 +244,7 @@
         }
 
         let isPreCheckMode = false;
-        function enterDashboard(requireAutoPreCheck = false) {
+        function enterDashboard(requireAutoPreCheck) {
             document.getElementById('screen-precheck').style.display = 'none';
             document.getElementById('screen-dashboard').style.display = 'flex';
             isPreCheckMode = requireAutoPreCheck;
@@ -253,23 +253,25 @@
             }
         }
 
+        // 🛠️ ส่วนที่แก้ไขบั๊กให้หน้าจอสีฟ้าแสดงผลได้ถูกต้องแล้วครับ
         function triggerBlueIntervention(source) {
-            const modal = document.getElementById('blueZoneModal');
-            modal.style.display = 'flex';
-            if(source === 'precheck') {
+            if (source === 'precheck') {
+                // กรณีครั้งแรก: เปิดหน้า Dashboard เป็นฉากหลังก่อน แล้วค่อยเอาหน้าต่างสีฟ้าซ้อนทับ
+                enterDashboard(false); 
                 document.getElementById('blueZoneSensorStatus').style.display = 'none';
                 document.getElementById('blueZoneManualResume').style.display = 'block';
             } else {
-                // Real-time sensor resume
+                // กรณีครั้งถัดๆ ไป (วัดด้วยเซ็นเซอร์): หน้า Dashboard ถูกเปิดไว้อยู่แล้ว
                 document.getElementById('blueZoneSensorStatus').style.display = 'block';
                 document.getElementById('blueZoneManualResume').style.display = 'none';
             }
+            // เรียกหน้าต่างสีฟ้าขึ้นมาแสดงผล
+            document.getElementById('blueZoneModal').style.display = 'flex';
         }
+
         function closeBlueIntervention() {
+            // ปิดหน้าต่างสีฟ้า (ระบบจะกลับไปอยู่ที่หน้า Dashboard เพื่อให้กดเชื่อมเซ็นเซอร์ต่อ)
             document.getElementById('blueZoneModal').style.display = 'none';
-            if(document.getElementById('screen-precheck').style.display === 'flex') {
-                enterDashboard(); // Proceed to dash
-            }
         }
 
         // --- 3. Sensor & Algorithm Logic ---
