@@ -2,285 +2,498 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arousal Observer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ArousalSense: OT Monitor (Pro)</title>
     
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#121212">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="theme-color" content="#101014">
+    <script src="chart.js"></script>
+    <script src="chartjs-plugin-annotation.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap');
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box;}
+        input { -webkit-user-select: auto; user-select: auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #101014; color: #ffffff; margin: 0; padding: 0; height: 100dvh; width: 100vw; overflow: hidden; display: flex; justify-content: center; align-items: center; }
         
-        /* Dark Theme Variables */
-        :root {
-            --bg-color: #121212;
-            --surface-color: #1e1e1e;
-            --surface-variant: #2c2c2c;
-            --text-primary: #e0e0e0;
-            --text-secondary: #9e9e9e;
-            --primary-color: #8ab4f8; 
-            --primary-dark: #669df6;
-            
-            /* Muted Zone Colors */
-            --zone-red: #b71c1c; 
-            --zone-yellow: #f57f17; 
-            --zone-green: #2e7d32; 
-        }
-
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            font-family: 'Sarabun', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            overflow: hidden; 
-            -webkit-tap-highlight-color: transparent;
-        }
+        /* General Modals & Screens */
+        .screen { display: none; width: 100%; max-width: 700px; height: 100%; flex-direction: column; background: #1e1e24; position: relative; }
+        .center-box { background: #1e1e24; padding: 30px; border-radius: 15px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8); text-align: center; width: 90%; max-width: 400px; border: 2px solid #4da6ff; z-index: 10; display: flex; flex-direction: column; align-items: center; }
         
-        .screen {
-            display: none; width: 100%; height: 100%;
-            flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; box-sizing: border-box;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        .active { display: flex; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .card {
-            background: var(--surface-color); padding: 25px; border-radius: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            width: 100%; max-width: 500px;
-            overflow-y: auto; max-height: 95vh;
-        }
-        h2 { color: var(--text-primary); margin-top: 0; margin-bottom: 20px; font-weight: 600; font-size: 1.4rem; }
+        /* Inputs & Buttons */
+        .input-group { margin-bottom: 15px; text-align: left; width: 100%; }
+        .input-group label { display: block; margin-bottom: 5px; color: #bbb; font-size: 14px; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #2a2a35; color: white; font-size: 16px; outline: none; }
+        .input-group input:focus { border-color: #4da6ff; }
+        .row-inputs { display: flex; gap: 10px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; background: #2a2a35; padding: 12px; border-radius: 8px; border: 1px solid #444; margin-bottom: 15px; width: 100%; cursor: pointer;}
+        .checkbox-group input { width: 20px; height: 20px; accent-color: #4da6ff; }
         
-        /* Material Inputs */
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-weight: 500; color: var(--primary-color); font-size: 0.85rem; margin-bottom: 8px; margin-left: 4px;}
-        input {
-            width: 100%; padding: 16px; 
-            background-color: var(--surface-variant);
-            color: var(--text-primary);
-            border: none; border-radius: 12px;
-            font-size: 1rem; font-family: 'Sarabun', sans-serif;
-            box-sizing: border-box; transition: 0.2s;
-        }
-        input:focus { outline: 2px solid var(--primary-color); }
-        input::placeholder { color: #757575; }
+        button { cursor: pointer; transition: 0.2s; outline: none; }
+        button:active { transform: scale(0.98); }
+        .btn-primary { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; color: white; background-color: #007bff; border: none; border-radius: 8px; margin-bottom: 10px; }
+        .btn-success { background-color: #00e676; color: #101014; }
+        .btn-danger { background-color: #ff4d4d; color: white; }
+        .btn-outline { background: transparent; color: #aaa; border: 1px solid #555; padding: 10px; border-radius: 8px; width: 100%; margin-bottom: 10px; }
         
-        /* Buttons */
-        .btn-primary {
-            background-color: var(--primary-color); color: #121212;
-            padding: 16px 24px; border: none; border-radius: 100px; 
-            font-size: 1.1rem; font-weight: 600; cursor: pointer;
-            width: 100%; transition: background-color 0.2s, transform 0.1s; margin-top: 15px;
-        }
-        .btn-primary:active { transform: scale(0.98); background-color: var(--primary-dark); }
+        /* Dashboard Elements */
+        .dash-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding: 10px 15px; }
+        .dash-content { padding: 10px 15px; flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .box-container { display: flex; gap: 10px; flex-shrink: 0; margin-bottom: 10px; }
+        .box { flex: 1; background: #2a2a35; border-radius: 10px; padding: 10px; text-align: center; border-bottom: 4px solid #555; }
+        .box .value { font-size: 30px; font-weight: bold; margin: 2px 0; }
+        .chart-container { flex-grow: 1; width: 100%; background: #2a2a35; border-radius: 10px; padding: 10px; min-height: 150px; }
         
-        .btn-stop {
-            background-color: transparent; color: #ffb4ab;
-            border: 1px solid #ffb4ab;
-            padding: 10px 16px; border-radius: 100px;
-            font-size: 0.9rem; font-weight: 500; cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-stop:active { background-color: rgba(255, 180, 171, 0.1); }
-
-        /* Instructions Screen */
-        .zone-desc { text-align: left; margin-bottom: 16px; padding: 16px; border-radius: 16px; background-color: var(--surface-variant); }
-        .zone-title { font-weight: 600; font-size: 1.05rem; margin-bottom: 6px; }
-        .zone-text { font-size: 0.9rem; color: var(--text-secondary); margin: 0; line-height: 1.5;}
-
-        /* Recording Screen */
-        .header-info {
-            width: 100%; display: flex; justify-content: space-between;
-            align-items: center; margin-bottom: 24px;
-        }
-        .info-text { font-size: 0.95rem; font-weight: 500; color: var(--text-primary); }
-        .info-sub { font-size: 0.8rem; color: var(--text-secondary); }
+        /* Traffic Lights */
+        .traffic-panel { background: #2a2a35; border-radius: 12px; padding: 10px; display: flex; justify-content: center; border: 2px solid #444; margin-bottom: 10px; }
+        .light-box { display: flex; gap: 20px; background: #111; padding: 10px 25px; border-radius: 40px; }
+        .bulb { width: 40px; height: 40px; border-radius: 50%; background: #333; opacity: 0.3; display: flex; justify-content: center; align-items: center; font-size: 20px; transition: 0.3s; }
+        .bulb.active.red { background: #ff4d4d; opacity: 1; box-shadow: 0 0 20px #ff4d4d; }
+        .bulb.active.yellow { background: #ffeb3b; opacity: 1; box-shadow: 0 0 20px #ffeb3b; }
+        .bulb.active.green { background: #00e676; opacity: 1; box-shadow: 0 0 20px #00e676; }
         
-        .color-container {
-            display: flex; flex-direction: column; width: 100%; height: 100%; gap: 16px;
-        }
-        .color-btn {
-            flex: 1; border: none; border-radius: 24px;
-            font-size: 2.5rem; font-weight: 600; color: rgba(255,255,255,0.9);
-            cursor: pointer; transition: transform 0.1s, filter 0.2s;
-        }
-        .color-btn:active { transform: scale(0.96); filter: brightness(1.2); }
+        /* Blue Zone Intervention Overlay */
+        .blue-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 25, 50, 0.95); backdrop-filter: blur(8px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9000; text-align: center; padding: 20px; animation: fadeIn 0.3s ease; border: 5px solid #4da6ff;}
+        .blue-icon { font-size: 80px; margin-bottom: 20px; animation: float 2s infinite ease-in-out; }
+        .blue-overlay h1 { color: #4da6ff; font-size: 28px; margin-bottom: 10px; }
+        .blue-overlay p { color: #ddd; font-size: 18px; line-height: 1.5; margin-bottom: 30px; }
         
-        .btn-red { background-color: var(--zone-red); } 
-        .btn-yellow { background-color: var(--zone-yellow); } 
-        .btn-green { background-color: var(--zone-green); } 
+        /* Calibration & Loading Modals */
+        .modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index: 1000; }
+        .db-controls { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
         
-        .log-feedback {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            font-size: 1rem; font-weight: 500; color: #121212; background: var(--text-primary);
-            padding: 8px 20px; border-radius: 100px;
-            opacity: 0; transition: opacity 0.3s; pointer-events: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
     </style>
 </head>
 <body>
 
-    <div id="screen1" class="screen active">
-        <div class="card">
-            <h2>ข้อมูลการประเมิน</h2>
-            <div class="input-group">
-                <label>ข้อมูลผู้รับบริการ (เด็ก)</label>
-                <input type="text" id="patientName" placeholder="ชื่อ-สกุล" required>
-                <input type="number" id="patientAge" placeholder="อายุ (ปี)" style="margin-top: 10px;" required>
+    <div id="screen-lock" class="center-box">
+        <h1 style="color:#4da6ff; margin-bottom: 5px;">🔒 ArousalSense</h1>
+        <p style="color:#888; margin-bottom: 20px;">Restricted Clinical Access Only</p>
+        <input type="password" id="pinCode" placeholder="PIN" inputmode="numeric" maxlength="4" style="font-size: 24px; text-align: center; letter-spacing: 10px; padding: 10px; border-radius: 8px; border: 2px solid #444; background: #2a2a35; color: white; width: 80%; margin-bottom: 15px;">
+        <button class="btn-primary" onclick="unlockApp()">ปลดล็อกระบบ</button>
+    </div>
+
+    <div id="screen-setup" class="center-box" style="display:none; max-width: 450px;">
+        <h2 style="color:#4da6ff; margin: 0 0 20px 0;">ข้อมูลผู้รับการฝึก (Patient Setup)</h2>
+        
+        <div class="input-group">
+            <label>ชื่อ/รหัสผู้รับการฝึก (Patient ID):</label>
+            <input type="text" id="inputName" placeholder="ระบุชื่อให้ตรงกับประวัติเดิม">
+        </div>
+        <div class="input-group">
+            <label>อายุ (Age):</label>
+            <div class="row-inputs">
+                <input type="number" id="inputYears" placeholder="ปี" min="1">
+                <input type="number" id="inputMonths" placeholder="เดือน" min="0" max="11">
             </div>
-            <div class="input-group">
-                <label>ข้อมูลผู้ประเมิน (Rater)</label>
-                <input type="text" id="raterName" placeholder="ชื่อ-สกุล" required>
-                <input type="text" id="raterProfession" placeholder="วิชาชีพ" style="margin-top: 10px;" required>
-            </div>
-            <button class="btn-primary" onclick="goToInstructions()">ถัดไป</button>
+        </div>
+        
+        <label class="checkbox-group">
+            <input type="checkbox" id="inputMed">
+            <span>ทานยาเกี่ยวกับสมาธิ/ปรับพฤติกรรมในวันนี้</span>
+        </label>
+
+        <button class="btn-primary btn-success" onclick="startPreCheck()">เข้าสู่ระบบมอนิเตอร์</button>
+        <button class="btn-outline" onclick="resetPatientBaseline()" style="color:#ffeb3b; border-color:#ffeb3b;">⚠️ ล้างประวัติค่า Baseline ของเด็กคนนี้</button>
+        
+        <div style="width: 100%; height: 1px; background: #444; margin: 15px 0;"></div>
+        <p style="color:#888; font-size:12px; margin-bottom:5px;">ระบบฐานข้อมูลออฟไลน์ (Local DB)</p>
+        <div class="db-controls">
+            <button class="btn-outline" onclick="backupDB()">💾 Backup DB</button>
+            <button class="btn-outline" onclick="document.getElementById('fileUpload').click()">📂 Restore DB</button>
+            <input type="file" id="fileUpload" style="display:none;" accept=".json" onchange="restoreDB(event)">
         </div>
     </div>
 
-    <div id="screen2" class="screen">
-        <div class="card">
-            <h2>คำอธิบายลักษณะพฤติกรรม</h2>
-            
-            <div class="zone-desc" style="border-left: 4px solid var(--zone-red);">
-                <div class="zone-title" style="color: #ff8a80;">RED ZONE (High Arousal)</div>
-                <p class="zone-text">ระดับการตื่นตัวสูงมาก มีอารมณ์รุนแรง ควบคุมตัวเองไม่ได้ เช่น โกรธจัด ร้องไห้งอแงรุนแรง ก้าวร้าว ตื่นตระหนก</p>
-            </div>
-            
-            <div class="zone-desc" style="border-left: 4px solid var(--zone-yellow);">
-                <div class="zone-title" style="color: #ffd54f;">YELLOW ZONE (Elevated)</div>
-                <p class="zone-text">ระดับการตื่นตัวเริ่มสูงกว่าปกติ หรืออยู่ในระดับที่เริ่มเสียสมาธิ เช่น ตื่นเต้นเกินไป หงุดหงิด วิตกกังวล ยุกยิก</p>
-            </div>
-
-            <div class="zone-desc" style="border-left: 4px solid var(--zone-green);">
-                <div class="zone-title" style="color: #81c784;">GREEN ZONE (Optimal)</div>
-                <p class="zone-text">ระดับการตื่นตัวที่เหมาะสม สงบและตื่นตัว (Calm & Alert) มีสมาธิพร้อมเรียนรู้และทำกิจกรรม</p>
-            </div>
-
-            <button class="btn-primary" onclick="startSession()">เริ่มเก็บข้อมูล</button>
-            <button class="btn-primary" style="background-color: transparent; color: var(--primary-color); border: 1px solid var(--primary-color);" onclick="backToScreen1()">ย้อนกลับ</button>
-        </div>
+    <div id="screen-precheck" class="center-box" style="display:none;">
+        <h2 style="color:#ffeb3b;">⚠️ ไม่พบประวัติการฝึก</h2>
+        <p style="color:#ccc; font-size: 14px; margin-bottom: 20px;">เพื่อให้การคำนวณแม่นยำที่สุด กรุณาประเมินสภาวะของเด็กด้วยสายตา (Clinical Observation) ก่อนเริ่มบันทึก Baseline ครั้งแรก</p>
+        
+        <button class="btn-primary" style="background: #4da6ff;" onclick="triggerBlueIntervention('precheck')">🥶 โซนสีฟ้า (ซึม/เฉื่อยชา/ง่วง)</button>
+        <button class="btn-primary btn-success" onclick="enterDashboard()">😃 โซนสีเขียว (พร้อมเรียนรู้ / Optimal)</button>
+        <button class="btn-primary" style="background: #ffeb3b; color: #111;" onclick="enterDashboard()">😐 โซนสีเหลือง (เริ่มตื่นตัว)</button>
+        <button class="btn-primary btn-danger" onclick="enterDashboard()">😫 โซนสีแดง (เครียด/Hyper)</button>
     </div>
 
-    <div id="screen3" class="screen">
-        <div class="header-info">
+    <div id="screen-dashboard" class="screen">
+        <div class="dash-header">
             <div>
-                <div id="displayPatientInfo" class="info-text">ผู้รับบริการ: -</div>
-                <div id="displayRaterInfo" class="info-sub">ผู้ประเมิน: -</div>
+                <h3 style="margin:0; color:#4da6ff;">ArousalSense</h3>
+                <div id="patientInfoLabel" style="font-size:12px; color:#aaa;">ผู้รับการฝึก: --</div>
             </div>
-            <button class="btn-stop" onclick="endSession()">จบและบันทึก</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-outline" style="padding: 5px 10px; margin:0;" onclick="location.reload()">กลับ</button>
+                <button id="exportBtn" class="btn-primary btn-success" style="padding: 5px 10px; margin:0; display:none;" onclick="exportCSV()">บันทึก CSV</button>
+            </div>
         </div>
-        <div class="color-container">
-            <button class="color-btn btn-red" onclick="recordArousal('Red')">RED</button>
-            <button class="color-btn btn-yellow" onclick="recordArousal('Yellow')">YELLOW</button>
-            <button class="color-btn btn-green" onclick="recordArousal('Green')">GREEN</button>
-        </div>
-        <div id="logFeedback" class="log-feedback">บันทึกแล้ว!</div>
-    </div>
 
-    <div id="screen4" class="screen">
-        <div class="card">
-            <h2>บันทึกข้อมูลสำเร็จ</h2>
-            <p style="color: var(--text-secondary); font-size: 1rem; margin-bottom: 30px; line-height: 1.5;">
-                ระบบได้สร้างและบันทึกไฟล์ CSV ลงในอุปกรณ์ของคุณเรียบร้อยแล้ว
-            </p>
-            <button class="btn-primary" onclick="resetApp()">เริ่มเก็บข้อมูลคนต่อไป</button>
+        <div class="dash-content">
+            <button id="connectBtn" class="btn-primary" onclick="connectSensor()">🔗 เชื่อมต่อ Sensor (BLE)</button>
+            <div id="statusText" style="text-align:center; padding:10px; background:#333; border-radius:8px; margin-bottom:10px; font-weight:bold;">รอการเชื่อมต่อ...</div>
+            
+            <div class="traffic-panel">
+                <div class="light-box">
+                    <div class="bulb green" id="lightGreen">😃</div>
+                    <div class="bulb yellow" id="lightYellow">😐</div>
+                    <div class="bulb red" id="lightRed">😫</div>
+                </div>
+            </div>
+
+            <div class="box-container">
+                <div class="box" style="border-color:#ff4d4d;">
+                    <h4 style="margin:0; color:#aaa; font-size:12px;">Heart Rate</h4>
+                    <div class="value" id="hrDisplay" style="color:#ff4d4d;">--</div>
+                </div>
+                <div class="box" style="border-color:#00e676;">
+                    <h4 style="margin:0; color:#aaa; font-size:12px;">HRV (RMSSD)</h4>
+                    <div class="value" id="hrvDisplay" style="color:#00e676;">--</div>
+                </div>
+            </div>
+
+            <div class="chart-container"><canvas id="arousalChart"></canvas></div>
+            <div id="baselineInfo" style="font-size:11px; color:#666; text-align:center; margin-top:10px;">System Ready</div>
+        </div>
+
+        <div id="blueZoneModal" class="blue-overlay">
+            <div class="blue-icon">⚡</div>
+            <h1>Blue Zone Alert</h1>
+            <p>ระดับการตื่นตัวต่ำกว่าเกณฑ์<br>กรุณาใช้กลยุทธ์เฉพาะบุคคล (Alerting Strategies) <br>เช่น Heavy work หรือ Vestibular <br>เพื่อปรับ Arousal ให้อยู่ในระดับ Optimal</p>
+            <div id="blueZoneSensorStatus" style="color:#00e676; font-size: 14px; margin-bottom: 20px;">กำลังอ่านค่าเซ็นเซอร์เพื่อรอกลับเข้าสู่โซนสีเขียว...</div>
+            <button id="blueZoneManualResume" class="btn-primary btn-success" style="max-width:200px; display:none;" onclick="closeBlueIntervention()">เด็กพร้อมแล้ว (Manual)</button>
+        </div>
+
+        <div id="calibModal" class="modal-overlay">
+            <div class="center-box" style="background:#fdfbf7; border-color:#fff;">
+                <h3 style="color:#5D4037;">กำลังเรียนรู้จังหวะหัวใจ...</h3>
+                <p style="color:#8D6E63; font-weight:bold;">ให้น้องนั่งพักนิ่งๆ ทำพุงป่อง 1 นาที</p>
+                <div style="font-size:40px; font-weight:bold; color:#00e676;" id="calibTimer">60</div>
+            </div>
         </div>
     </div>
 
     <script>
-        let sessionData = [];
-        let info = {};
+        // --- 1. Database & App State Management ---
+        const APP_PIN = "2026";
+        let db = JSON.parse(localStorage.getItem('arousal_db_v2')) || {};
+        let patientProfile = { id: "", isMedicated: false, ageStr: "" };
+        let sessionLog = [];
+        let historicalBaseline = null; 
+        
+        function saveDB() { localStorage.setItem('arousal_db_v2', JSON.stringify(db)); }
+        
+        function unlockApp() {
+            if (document.getElementById('pinCode').value === APP_PIN) {
+                document.getElementById('screen-lock').style.display = 'none';
+                document.getElementById('screen-setup').style.display = 'flex';
+            } else { alert("รหัสผ่านไม่ถูกต้อง"); document.getElementById('pinCode').value = ''; }
+        }
 
-        function goToInstructions() {
-            const pName = document.getElementById('patientName').value.trim();
-            const pAge = document.getElementById('patientAge').value.trim();
-            const rName = document.getElementById('raterName').value.trim();
-            const rProf = document.getElementById('raterProfession').value.trim();
+        // DB Backup & Restore
+        function backupDB() {
+            const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `ArousalDB_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+        function restoreDB(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try { db = JSON.parse(e.target.result); saveDB(); alert("กู้คืนฐานข้อมูลสำเร็จ!"); } 
+                catch(err) { alert("ไฟล์ไม่ถูกต้อง"); }
+            };
+            reader.readAsText(file);
+        }
 
-            if (!pName || !pAge || !rName || !rProf) {
-                alert('กรุณากรอกข้อมูลให้ครบถ้วนก่อนไปต่อ');
+        function resetPatientBaseline() {
+            let name = document.getElementById('inputName').value.trim();
+            let isMed = document.getElementById('inputMed').checked;
+            if(!name) return alert("กรุณาพิมพ์ชื่อผู้รับการฝึกก่อน");
+            let dbKey = `${name}_med_${isMed}`;
+            if(confirm(`ยืนยันการลบประวัติ Baseline ของ ${name} (สถานะยา: ${isMed}) ใช่หรือไม่?`)) {
+                delete db[dbKey]; saveDB(); alert("ลบประวัติเรียบร้อย");
+            }
+        }
+
+        // --- 2. Flow Control ---
+        function startPreCheck() {
+            let name = document.getElementById('inputName').value.trim();
+            let yrs = document.getElementById('inputYears').value;
+            if(!name || !yrs) return alert("กรุณากรอกข้อมูลให้ครบ");
+            
+            patientProfile.id = name;
+            patientProfile.isMedicated = document.getElementById('inputMed').checked;
+            patientProfile.ageStr = `${yrs}Y${document.getElementById('inputMonths').value || 0}M`;
+            
+            let dbKey = `${patientProfile.id}_med_${patientProfile.isMedicated}`;
+            historicalBaseline = db[dbKey]; // Load history
+
+            document.getElementById('screen-setup').style.display = 'none';
+            document.getElementById('patientInfoLabel').innerText = `${name} | อายุ: ${patientProfile.ageStr} | ยา: ${patientProfile.isMedicated?"มี":"ไม่มี"}`;
+
+            if (!historicalBaseline) {
+                // First time: Manual Pre-check
+                document.getElementById('screen-precheck').style.display = 'flex';
+            } else {
+                // Has history: Auto Pre-check in dashboard
+                enterDashboard(true);
+            }
+        }
+
+        let isPreCheckMode = false;
+        function enterDashboard(requireAutoPreCheck = false) {
+            document.getElementById('screen-precheck').style.display = 'none';
+            document.getElementById('screen-dashboard').style.display = 'flex';
+            isPreCheckMode = requireAutoPreCheck;
+            if(isPreCheckMode) {
+                document.getElementById('statusText').innerText = "รอเชื่อมต่อเซ็นเซอร์เพื่อทำการ Pre-Check 30 วินาที...";
+            }
+        }
+
+        function triggerBlueIntervention(source) {
+            const modal = document.getElementById('blueZoneModal');
+            modal.style.display = 'flex';
+            if(source === 'precheck') {
+                document.getElementById('blueZoneSensorStatus').style.display = 'none';
+                document.getElementById('blueZoneManualResume').style.display = 'block';
+            } else {
+                // Real-time sensor resume
+                document.getElementById('blueZoneSensorStatus').style.display = 'block';
+                document.getElementById('blueZoneManualResume').style.display = 'none';
+            }
+        }
+        function closeBlueIntervention() {
+            document.getElementById('blueZoneModal').style.display = 'none';
+            if(document.getElementById('screen-precheck').style.display === 'flex') {
+                enterDashboard(); // Proceed to dash
+            }
+        }
+
+        // --- 3. Sensor & Algorithm Logic ---
+        let bleDevice, bleServer, hrChar;
+        let rrWindow = [], hrvHistory = Array(60).fill(null);
+        let currentHR = 0, currentHRV = 0;
+        let chart;
+        
+        // Anti-Artifact & Debounce
+        let lastValidHR = null;
+        let blueDebounceCounter = 0; // Needs 5 consecutive seconds to trigger Blue
+        
+        // State Limits
+        let dailyLimitYellow = 0, dailyLimitRed = 0, dailyBaselineRMSSD = 0, dailyBaselineHR = 0;
+        let isCalibrated = false;
+        let calibDataHR = [], calibDataHRV = [];
+        let preCheckDataHR = [], preCheckTimer = 0;
+
+        async function connectSensor() {
+            try {
+                bleDevice = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+                bleServer = await bleDevice.gatt.connect();
+                const service = await bleServer.getPrimaryService('heart_rate');
+                hrChar = await service.getCharacteristic('heart_rate_measurement');
+                
+                document.getElementById('connectBtn').style.display = 'none';
+                await hrChar.startNotifications();
+                hrChar.addEventListener('characteristicvaluechanged', handleSensorData);
+                initChart();
+            } catch (err) { alert("เชื่อมต่อล้มเหลว: " + err); }
+        }
+
+        function handleSensorData(event) {
+            const val = event.target.value;
+            const flags = val.getUint8(0);
+            let index = 1;
+            let rawHR = (flags & 0x01) ? val.getUint16(index, true) : val.getUint8(index);
+            index += (flags & 0x01) ? 2 : 1;
+
+            // 🛡️ Noise Filter (Artifact Rejection)
+            if (lastValidHR !== null && Math.abs(rawHR - lastValidHR) > 30) {
+                // Reject sudden impossible jumps
+                return; 
+            }
+            lastValidHR = rawHR;
+            currentHR = rawHR;
+            document.getElementById('hrDisplay').innerText = currentHR;
+
+            if ((flags & 0x10) >> 4) {
+                while (index < val.byteLength) {
+                    rrWindow.push((val.getUint16(index, true) / 1024.0) * 1000.0);
+                    index += 2;
+                }
+            }
+            if (rrWindow.length > 30) rrWindow = rrWindow.slice(rrWindow.length - 30);
+            if (rrWindow.length >= 20) {
+                currentHRV = calculateRMSSD(rrWindow);
+                document.getElementById('hrvDisplay').innerText = currentHRV.toFixed(1);
+                processLogicLoop();
+            }
+        }
+
+        function calculateRMSSD(rrs) {
+            let sumSq = 0;
+            for (let i = 1; i < rrs.length; i++) sumSq += Math.pow(rrs[i] - rrs[i-1], 2);
+            return Math.sqrt(sumSq / (rrs.length - 1));
+        }
+
+        function processLogicLoop() {
+            // A. Auto Pre-Check Phase (30s)
+            if (isPreCheckMode && !isCalibrated) {
+                preCheckDataHR.push(currentHR);
+                preCheckTimer++;
+                document.getElementById('statusText').innerText = `กำลังตรวจสอบเทียบประวัติเดิม... (${preCheckTimer}/30)`;
+                
+                if (preCheckTimer >= 30) {
+                    let avgPreHR = preCheckDataHR.reduce((a,b)=>a+b,0)/preCheckDataHR.length;
+                    isPreCheckMode = false; // Finish pre-check
+                    
+                    // Logic: Is it Blue Zone compared to history?
+                    if (avgPreHR < (historicalBaseline.hr * 0.85)) {
+                        triggerBlueIntervention('auto');
+                        document.getElementById('statusText').innerText = "รอการฟื้นฟู Arousal...";
+                    } else {
+                        startDailyCalibration(); // Passed! Start normal calib
+                    }
+                }
                 return;
             }
-            info = { patientName: pName, patientAge: pAge, raterName: rName, raterProfession: rProf };
-            switchScreen('screen1', 'screen2');
+
+            // B. Wait for Recovery (if blocked by Blue overlay)
+            if (document.getElementById('blueZoneModal').style.display === 'flex' && historicalBaseline) {
+                // Auto-resume if HR climbs back near historical baseline
+                if (currentHR >= (historicalBaseline.hr * 0.90)) {
+                    blueDebounceCounter++;
+                    if(blueDebounceCounter >= 5) {
+                        closeBlueIntervention();
+                        blueDebounceCounter = 0;
+                        if(!isCalibrated) startDailyCalibration();
+                    }
+                } else { blueDebounceCounter = 0; }
+                return;
+            }
+
+            // C. Daily Calibration Phase (60s)
+            if (!isCalibrated && !isPreCheckMode && document.getElementById('blueZoneModal').style.display !== 'flex') {
+                calibDataHR.push(currentHR); calibDataHRV.push(currentHRV);
+                let remaining = 60 - calibDataHR.length;
+                document.getElementById('calibModal').style.display = 'flex';
+                document.getElementById('calibTimer').innerText = remaining;
+                
+                if (remaining <= 0) {
+                    dailyBaselineHR = calibDataHR.reduce((a,b)=>a+b,0)/60;
+                    dailyBaselineRMSSD = calibDataHRV.reduce((a,b)=>a+b,0)/60;
+                    
+                    // Set limits for today
+                    dailyLimitYellow = dailyBaselineRMSSD * 0.70;
+                    dailyLimitRed = dailyBaselineRMSSD * 0.40;
+                    
+                    isCalibrated = true;
+                    document.getElementById('calibModal').style.display = 'none';
+                    document.getElementById('exportBtn').style.display = 'block';
+                    document.getElementById('baselineInfo').innerText = `Daily Baseline HRV: ${dailyBaselineRMSSD.toFixed(1)} | HR: ${dailyBaselineHR.toFixed(1)}`;
+                    
+                    hrvHistory = Array(60).fill(dailyBaselineRMSSD);
+                    drawChartZones();
+                }
+                return;
+            }
+
+            // D. Real-time Monitoring Phase
+            if (isCalibrated) {
+                hrvHistory.push(currentHRV);
+                if (hrvHistory.length > 80) hrvHistory.shift();
+                chart.data.datasets[0].data = hrvHistory;
+                chart.update();
+
+                // Check for sudden drop to Blue Zone during session
+                if (currentHR < (dailyBaselineHR * 0.85) && currentHRV >= dailyLimitYellow) {
+                    blueDebounceCounter++;
+                    if (blueDebounceCounter >= 5) { // 🛡️ Debounce 5 seconds
+                        triggerBlueIntervention('auto');
+                        historicalBaseline = { hr: dailyBaselineHR }; // use today's baseline as target for recovery
+                        blueDebounceCounter = 0;
+                    }
+                } else {
+                    blueDebounceCounter = 0; // Reset
+                    
+                    // Normal Traffic Lights (Green/Yellow/Red) based on HRV dropping
+                    let colorName = "Green";
+                    document.querySelectorAll('.bulb').forEach(b=>b.classList.remove('active'));
+                    
+                    if (currentHRV < dailyLimitRed) { 
+                        document.getElementById('lightRed').classList.add('active'); 
+                        document.getElementById('statusText').innerText = "DYSREGULATED (แดง)"; colorName="Red";
+                    } else if (currentHRV < dailyLimitYellow) { 
+                        document.getElementById('lightYellow').classList.add('active'); 
+                        document.getElementById('statusText').innerText = "ELEVATED (เหลือง)"; colorName="Yellow";
+                    } else { 
+                        document.getElementById('lightGreen').classList.add('active'); 
+                        document.getElementById('statusText').innerText = "OPTIMAL (เขียว)"; colorName="Green";
+                    }
+
+                    // Log Data
+                    let now = new Date();
+                    sessionLog.push({
+                        date: now.toISOString().split('T')[0],
+                        time: now.toLocaleTimeString('th-TH'),
+                        timestamp: Date.now(),
+                        hr: currentHR, hrv: currentHRV.toFixed(2), color: colorName
+                    });
+                }
+            }
         }
 
-        function backToScreen1() { switchScreen('screen2', 'screen1'); }
-
-        function startSession() {
-            sessionData = []; 
-            document.getElementById('displayPatientInfo').innerText = `ผู้รับบริการ: ${info.patientName}`;
-            document.getElementById('displayRaterInfo').innerText = `Rater: ${info.raterName}`;
-            switchScreen('screen2', 'screen3');
+        function startDailyCalibration() {
+            document.getElementById('calibModal').style.display = 'flex';
+            document.getElementById('statusText').innerText = "กำลังสร้าง Daily Baseline...";
+            calibDataHR = []; calibDataHRV = [];
         }
 
-        function recordArousal(color) {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('th-TH', { hour12: false });
-            
-            sessionData.push({
-                date: now.toLocaleDateString('th-TH'),
-                time: timeStr,
-                timestamp_ms: now.getTime(),
-                color: color
+        function initChart() {
+            const ctx = document.getElementById('arousalChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: Array.from({length: 80}, (_, i) => i), datasets: [{ label: 'HRV', data: hrvHistory, borderColor: '#4da6ff', borderWidth: 2, pointRadius: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x:{display:false}, y:{grid:{color:'#444'}} }, plugins:{legend:{display:false}, annotation:{annotations:{}}} }
             });
-
-            const feedback = document.getElementById('logFeedback');
-            feedback.innerText = `บันทึก ${color} เวลา ${timeStr}`;
-            feedback.style.opacity = 1;
-            setTimeout(() => { feedback.style.opacity = 0; }, 1200);
+        }
+        function drawChartZones() {
+            chart.options.plugins.annotation.annotations = {
+                lineY: { type: 'line', yMin: dailyLimitYellow, yMax: dailyLimitYellow, borderColor: '#ffeb3b', borderDash: [5,5] },
+                lineR: { type: 'line', yMin: dailyLimitRed, yMax: dailyLimitRed, borderColor: '#ff4d4d', borderDash: [5,5] }
+            };
+            chart.update();
         }
 
-        function endSession() {
-            if (sessionData.length === 0 && !confirm("ยังไม่มีข้อมูล ต้องการบันทึกไฟล์ว่างหรือไม่?")) return;
-            exportCSV();
-            switchScreen('screen3', 'screen4');
-        }
-
+        // --- 4. Export & Save Data ---
         function exportCSV() {
-            let csvContent = "PatientName,PatientAge,RaterName,RaterProfession,Date,Time,Timestamp_MS,ArousalLevel\n";
-            sessionData.forEach(row => {
-                csvContent += `"${info.patientName}",${info.patientAge},"${info.raterName}","${info.raterProfession}",${row.date},${row.time},${row.timestamp_ms},${row.color}\n`;
+            if (sessionLog.length === 0) return alert("ยังไม่มีข้อมูลให้บันทึก");
+            
+            // 1. Update Historical DB
+            let dbKey = `${patientProfile.id}_med_${patientProfile.isMedicated}`;
+            let oldData = db[dbKey] || { hr: 0, hrv: 0, count: 0 };
+            let newCount = oldData.count + 1;
+            db[dbKey] = {
+                hr: ((oldData.hr * oldData.count) + dailyBaselineHR) / newCount,
+                hrv: ((oldData.hrv * oldData.count) + dailyBaselineRMSSD) / newCount,
+                count: newCount
+            };
+            saveDB(); // Save cumulative average
+
+            // 2. Export strict CSV format
+            let csv = "\uFEFFPatientName,PatientAge,Date,Time,Timestamp_MS,ArousalLevel,Heart Rate (BPM),HRV RMSSD (ms)\n";
+            sessionLog.forEach(r => {
+                csv += `${patientProfile.id},${patientProfile.ageStr},${r.date},${r.time},${r.timestamp},${r.color},${r.hr},${r.hrv}\n`;
             });
 
-            // แก้ไขปัญหาภาษาไทยเป็นภาษาต่างดาวด้วยการบังคับใส่ BOM (Byte Order Mark) ระดับไบต์
-            const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
-            const blob = new Blob([BOM, csvContent], { type: 'text/csv;charset=utf-8' });
-            
-            const link = document.createElement("a");
-            const currentDate = new Date().toISOString().split('T')[0];
-            const cleanName = info.patientName.replace(/\s+/g, '_');
-            
-            link.href = URL.createObjectURL(blob);
-            link.download = `Arousal_${cleanName}_by_${info.raterName}_${currentDate}.csv`;
-            document.body.appendChild(link); 
-            link.click(); 
-            document.body.removeChild(link);
-        }
-
-        function resetApp() {
-            document.getElementById('patientName').value = '';
-            document.getElementById('patientAge').value = '';
-            switchScreen('screen4', 'screen1');
-        }
-
-        function switchScreen(fromId, toId) {
-            document.getElementById(fromId).classList.remove('active');
-            document.getElementById(toId).classList.add('active');
-        }
-
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+            let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `ArousalSense_${patientProfile.id}_Med${patientProfile.isMedicated}_${sessionLog[0].date}.csv`;
+            a.click();
+            alert("บันทึกข้อมูลและอัปเดตฐานข้อมูลสำเร็จ!");
         }
     </script>
 </body>
